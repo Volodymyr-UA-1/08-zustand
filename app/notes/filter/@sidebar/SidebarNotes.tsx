@@ -9,16 +9,16 @@ const tags = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
 export function SidebarNotes() {
   const pathname = usePathname();
 
-  // Функція для перевірки, чи є посилання активним
   const isActive = (tag: string) => {
+    // Для "All" перевіряємо точний збіг з /all
     if (tag === "All") return pathname === "/notes/filter/all";
+    // Для інших — точний збіг з великої літери, як у масиві tags
     return pathname === `/notes/filter/${tag}`;
   };
 
   return (
     <div className={css.sidebarContainer}>
       <ul className={css.menuList}>
-        {/* Посилання на всі нотатки */}
         <li className={css.menuItem}>
           <Link
             href="/notes/filter/all"
@@ -28,7 +28,6 @@ export function SidebarNotes() {
           </Link>
         </li>
 
-        {/* Динамічний список тегів */}
         {tags.map((tag) => (
           <li key={tag} className={css.menuItem}>
             <Link

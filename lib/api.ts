@@ -33,6 +33,7 @@ export const createNote = async (
   return data;
 };
 
+
 //  Видалити нотатку за ID
 export const deleteNote = async (id: string): Promise<Note> => {
   const { data } = await api.delete<Note>(`/notes/${id}`);
@@ -62,3 +63,10 @@ export const fetchNotes = async ({
 
   return data;
 };
+//відправка даних на сервер
+export type NewNoteData = {
+  title: string;
+  content: string;
+  tag: NoteTag;
+};
+
