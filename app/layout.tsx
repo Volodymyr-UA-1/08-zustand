@@ -51,7 +51,7 @@ export default function RootLayout({
             {children}
           </main>
           
-          {/* Слот для модалок, які тепер працюють коректно */}
+          {/* Слот для модалок, */}
           {modal} 
 
           <Footer />
