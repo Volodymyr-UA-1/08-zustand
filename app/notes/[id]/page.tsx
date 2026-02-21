@@ -1,30 +1,50 @@
-import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { fetchNoteById } from '@/lib/api';
-import NoteDetailsClient from './NoteDetails.client';
+import { Metadata } from "next";
+import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { fetchNoteById } from "@/lib/api";
+import NoteDetailsClient from "./NoteDetails.client";
 
-type NotePageProps = {
-  params: Promise<{ id: string }>; // params приходить як Promise в Next.js 15
+type Props = {
+  params: {
+    id: string;
+  };
 };
 
-// 1. Додаємо ключове слово async
-export default async function NotePage({ params }: NotePageProps) {
-  // 2. Очікуємо отримання id з params
-  const { id } = await params; 
+export async function generateMetadata({
+  params,
+}: Props): Promise<Metadata> {
+  const note = await fetchNoteById(params.id || "");
 
+  return {
+    title: note?.title || "Note Details",
+    description: note?.content?.slice(0, 30) || "Note details page",
+
+    openGraph: {
+      title: note?.title || "Note Details",
+      description: note?.content?.slice(0, 30) || "Note details page",
+      url: `https://notehub.com/notes/${params.id}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+        },
+      ],
+      type: "website",
+    },
+  };
+}
+
+export default async function NotePage({ params }: Props) {
   const queryClient = new QueryClient();
 
-  // 3. Префетчимо нотатку на сервері
   await queryClient.prefetchQuery({
-    queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
+    queryKey: ["note", params.id],
+    queryFn: () => fetchNoteById(params.id || ""),
   });
 
-  const dehydratedState = dehydrate(queryClient);
-
   return (
-    // 4. Передаємо префетчені дані через HydrationBoundary
-    <HydrationBoundary state={dehydratedState}>
-      <NoteDetailsClient id={id} />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NoteDetailsClient id={params.id} />
     </HydrationBoundary>
   );
 }
