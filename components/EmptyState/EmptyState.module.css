@@ -1,0 +1,7 @@
+.emptyState {
+  margin: 48px 0;
+  width: 100%; /* займає всю ширину контейнера */
+  text-align: center;
+  font-size: 16px;
+  color: #6b7280;
+}
