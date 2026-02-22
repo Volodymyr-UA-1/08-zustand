@@ -1,7 +1,6 @@
 'use client';
 
-
-import { useState, useEffect } from "react"; // Додали useEffect
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
@@ -23,17 +22,16 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  // 🔥 Обов'язково: скидаємо фільтри при зміні категорії в URL
+  // Скидаємо фільтри при зміні категорії в URL
   useEffect(() => {
     setPage(1);
-    setSearch("");
+    setSearch(""); 
   }, [initialTag]);
 
-  // Перевірка тега (залишаємо вашу логіку)
   const activeTag = VALID_TAGS.includes(initialTag) ? initialTag : "";
 
   const { data, isLoading, isError, isFetching } = useQuery<FetchNotesResponse>({
-    // queryKey тепер точно реагує на зміну initialTag
+    // React Query бачить змінений search тільки через 500мс після затримки в SearchBox
     queryKey: ["notes", initialTag, page, search], 
     queryFn: () =>
       fetchNotes({
@@ -46,11 +44,15 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
     staleTime: 1000 * 60,
   });
 
+  // Додаємо відсутню функцію зміни сторінки (виправляє Error 2304)
   const handlePageChange = (newPage: number) => {
     if (!data) return;
-    if (newPage >= 1 && newPage <= data.totalPages) setPage(newPage);
+    if (newPage >= 1 && newPage <= data.totalPages) {
+      setPage(newPage);
+    }
   };
 
+  // Ця функція викликається з SearchBox після дебаунсу
   const handleSearch = (value: string) => {
     setSearch(value);
     setPage(1);
@@ -59,7 +61,7 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
-        <SearchBox onSearch={handleSearch} />
+        <SearchBox onSearch={handleSearch} initialValue={search} />
 
         {data && data.totalPages > 1 && (
           <Pagination
@@ -69,7 +71,6 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
           />
         )}
 
-        {/* 🔥 Тепер це посилання, а не кнопка */}
         <Link href="/notes/action/create" className={css.button}>
           Create note +
         </Link>
