@@ -2,22 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNote } from '@/lib/api'; // Твоя функція з api.ts
+import { createNote } from '@/lib/api';
+import { useNoteStore } from '@/lib/store/noteStore';
 import type { NoteTag } from '@/types/note';
 import css from './NoteForm.module.css';
 
 export default function NoteForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  
+  // Дістаємо стан чернетки та функції зі стору
+  const { draft, setDraft, clearDraft } = useNoteStore();
 
   const { mutate, isPending } = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
-      // Оновлюємо кеш запитів, щоб нова нотатка з'явилася в списку
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      // ПОВНИЙ шлях для уникнення 404
-      router.push('/notes/filter/all');
-      router.refresh();
+      // При успішному створенні — ОЧИЩАЄМО чернетку
+      clearDraft(); 
+      // Повертаємося на попередній маршрут
+      router.back();
     },
     onError: (error) => {
       console.error('Помилка:', error);
@@ -25,32 +29,58 @@ export default function NoteForm() {
     }
   });
 
-  const handleSubmit = (formData: FormData) => {
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
-    const tag = formData.get('tag') as NoteTag;
+  // Обробник onChange для миттєвого збереження в Zustand
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setDraft({ [name]: value });
+  };
 
-    // Валідація (як у твоєму коді)
-    if (!title || title.length < 3) return alert('Title too short');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-    mutate({ title, content, tag });
+    if (!draft.title || draft.title.length < 3) {
+      return alert('Title too short');
+    }
+
+    // Відправляємо актуальні дані з draft
+    mutate(draft);
   };
 
   return (
-    <form action={handleSubmit} className={css.form}>
+    <form onSubmit={handleSubmit} className={css.form}>
       <div className={css.formGroup}>
         <label>Title</label>
-        <input type="text" name="title" className={css.input} required />
+        <input 
+          type="text" 
+          name="title" 
+          className={css.input} 
+          required 
+          value={draft.title} // Автоматично підставляє draft або initialDraft
+          onChange={handleChange}
+        />
       </div>
 
       <div className={css.formGroup}>
         <label>Content</label>
-        <textarea name="content" rows={8} className={css.textarea} />
+        <textarea 
+          name="content" 
+          rows={8} 
+          className={css.textarea} 
+          value={draft.content}
+          onChange={handleChange}
+        />
       </div>
 
       <div className={css.formGroup}>
         <label>Tag</label>
-        <select name="tag" className={css.select} defaultValue="Todo">
+        <select 
+          name="tag" 
+          className={css.select} 
+          value={draft.tag}
+          onChange={handleChange}
+        >
           <option value="Todo">Todo</option>
           <option value="Work">Work</option>
           <option value="Personal">Personal</option>
@@ -60,16 +90,17 @@ export default function NoteForm() {
       </div>
 
       <div className={css.actions}>
-        {/* Кнопка Create */}
         <button type="submit" className={css.submitButton} disabled={isPending}>
           {isPending ? 'Creating...' : 'Create note'}
         </button>
         
-        {/* Кнопка Cancel — Тільки одна! */}
         <button 
           type="button" 
           className={css.cancelButton} 
-          onClick={() => router.push('/notes/filter/all')}
+          onClick={() => {
+            // При Cancel НЕ очищаємо draft, просто повертаємося назад
+            router.back();
+          }}
         >
           Cancel
         </button>
